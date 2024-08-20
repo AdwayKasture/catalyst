@@ -17,7 +17,7 @@ defmodule CatalystWeb.CoreComponents do
   use Phoenix.Component
 
   alias Phoenix.LiveView.JS
-  import CatalystWeb.Gettext
+  use Gettext, backend: CatalystWeb.Gettext
 
   @doc """
   Renders a modal.

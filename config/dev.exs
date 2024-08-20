@@ -3,7 +3,7 @@ import Config
 # Configure your database
 config :catalyst, Catalyst.Repo,
   username: "postgres",
-  password: "postgres",
+  password: "password",
   hostname: "localhost",
   database: "catalyst_dev",
   stacktrace: true,
