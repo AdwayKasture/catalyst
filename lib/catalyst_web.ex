@@ -54,6 +54,7 @@ defmodule CatalystWeb do
       use Phoenix.LiveView,
         layout: {CatalystWeb.Layouts, :app}
 
+      on_mount CatalystWeb.RestoreUser
       unquote(html_helpers())
     end
   end
