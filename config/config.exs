@@ -22,6 +22,18 @@ config :catalyst, CatalystWeb.Endpoint,
   pubsub_server: Catalyst.PubSub,
   live_view: [signing_salt: "YRpSuJCp"]
 
+# Oban config
+config :catalyst, Oban,
+  repo: Catalyst.Repo,
+  queues: [default: 10],
+  plugins: [
+    Oban.Plugins.Pruner,
+    {Oban.Plugins.Cron,
+     crontab: [
+       {"0 20 * * *", Catalyst.Workers.DailyWorker}
+     ]}
+  ]
+
 # Configures the mailer
 #
 # By default it uses the "Local" adapter which stores the emails

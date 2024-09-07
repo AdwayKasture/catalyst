@@ -5,7 +5,7 @@ defmodule Catalyst.MixProject do
     [
       app: :catalyst,
       version: "0.1.0",
-      elixir: "~> 1.14",
+      elixir: "~> 1.17.2",
       elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,
       aliases: aliases(),
@@ -56,10 +56,13 @@ defmodule Catalyst.MixProject do
       {:finch, "~> 0.13"},
       {:telemetry_metrics, "~> 1.0"},
       {:telemetry_poller, "~> 1.0"},
-      {:gettext, "~> 0.20"},
+      {:gettext, "~> 0.26.1"},
       {:jason, "~> 1.2"},
       {:dns_cluster, "~> 0.1.1"},
-      {:bandit, "~> 1.5"}
+      {:bandit, "~> 1.5"},
+      {:timex, "~> 3.7.11"},
+      {:oban, "~> 2.17"},
+      {:httpoison, "~> 2.2"}
     ]
   end
 

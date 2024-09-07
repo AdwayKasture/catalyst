@@ -14,10 +14,12 @@ defmodule Catalyst.Application do
       {Phoenix.PubSub, name: Catalyst.PubSub},
       # Start the Finch HTTP client for sending emails
       {Finch, name: Catalyst.Finch},
+      {Catalyst.MarketData.InstrumentsCache, name: Catalyst.MarketData.InstrumentsCache},
       # Start a worker by calling: Catalyst.Worker.start_link(arg)
       # {Catalyst.Worker, arg},
       # Start to serve requests, typically the last entry
-      CatalystWeb.Endpoint
+      CatalystWeb.Endpoint,
+      {Oban, oban_config()}
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html
@@ -32,5 +34,17 @@ defmodule Catalyst.Application do
   def config_change(changed, _new, removed) do
     CatalystWeb.Endpoint.config_change(changed, removed)
     :ok
+  end
+
+  defp oban_config() do
+    opts = Application.fetch_env!(:catalyst, Oban)
+
+    # if(Code.ensure_loaded?(IEx) and IEx.started?()) do
+    #   opts
+    #   |> Keyword.put(:crontab, false)
+    #   |> Keyword.put(:queues, false)
+    # else
+    opts
+    # end
   end
 end

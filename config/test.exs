@@ -23,6 +23,9 @@ config :catalyst, CatalystWeb.Endpoint,
   secret_key_base: "4A4wVCQM7/ewiFwFcBSOqN3w6WLuYFSE/Lqg1BiXWMqnsEoEwwKi/2HqwAcbcvJn",
   server: false
 
+# disable oban for tests
+config :catalyst, Oban, queues: false, plugins: false
+
 # In test we don't send emails
 config :catalyst, Catalyst.Mailer, adapter: Swoosh.Adapters.Test
 

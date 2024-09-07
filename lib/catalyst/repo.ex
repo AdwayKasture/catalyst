@@ -10,7 +10,7 @@ defmodule Catalyst.Repo do
   @impl true
   def prepare_query(_operation, query, opts) do
     cond do
-      opts[:skip_user_id] || opts[:schema_migration] -> {query, opts}
+      opts[:skip_user_id] || opts[:schema_migration] || opts[:oban] -> {query, opts}
       user_id = opts[:user_id] -> {Ecto.Query.where(query, user_id: ^user_id), opts}
       true -> raise "expected user_id or skip_user_id to be set "
     end
