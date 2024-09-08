@@ -17,12 +17,6 @@ defmodule CatalystWeb.Router do
     plug :accepts, ["json"]
   end
 
-  scope "/", CatalystWeb do
-    pipe_through :browser
-
-    get "/", PageController, :home
-  end
-
   # Other scopes may use custom stacks.
   # scope "/api", CatalystWeb do
   #   pipe_through :api
@@ -50,6 +44,8 @@ defmodule CatalystWeb.Router do
   scope "/", CatalystWeb do
     pipe_through [:browser, :redirect_if_user_is_authenticated]
 
+    get "/", PageController, :home
+
     live_session :redirect_if_user_is_authenticated,
       on_mount: [{CatalystWeb.UserAuth, :redirect_if_user_is_authenticated}] do
       live "/users/register", UserRegistrationLive, :new
@@ -66,6 +62,7 @@ defmodule CatalystWeb.Router do
 
     live_session :require_authenticated_user,
       on_mount: [{CatalystWeb.UserAuth, :ensure_authenticated}] do
+      live "/dashboard", DashBoardLive
       live "/users/settings", UserSettingsLive, :edit
       live "/users/settings/confirm_email/:token", UserSettingsLive, :confirm_email
     end

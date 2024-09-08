@@ -23,7 +23,14 @@ defmodule Catalyst.Portfolio.Trade do
 
   def validate(changeset) do
     changeset
-    |> validate_required([:type, :transaction_date, :avg_trade_price, :currency, :quantity,:instrument_id])
+    |> validate_required([
+      :type,
+      :transaction_date,
+      :avg_trade_price,
+      :currency,
+      :quantity,
+      :instrument_id
+    ])
     |> validate_number(:quantity, greater_than: 0)
     |> validate_number(:avg_trade_price, greater_than: 0)
     |> validate_number(:fees, greater_than_or_equal_to: 0, less_than_or_equal_to: 100)
@@ -31,7 +38,15 @@ defmodule Catalyst.Portfolio.Trade do
 
   def create_trade(attrs) do
     %Trade{}
-    |> cast(attrs, [:type, :transaction_date, :avg_trade_price, :currency, :fees, :quantity, :instrument_id])
+    |> cast(attrs, [
+      :type,
+      :transaction_date,
+      :avg_trade_price,
+      :currency,
+      :fees,
+      :quantity,
+      :instrument_id
+    ])
     |> put_change(:currency, "INR")
     |> validate()
     |> put_change(:user_id, Repo.get_user_id())
@@ -41,7 +56,15 @@ defmodule Catalyst.Portfolio.Trade do
 
   def update_trade(org_txn, attrs) do
     org_txn
-    |> cast(attrs, [:type, :transaction_date, :avg_trade_price, :currency, :fees, :quantity, :instrument_id])
+    |> cast(attrs, [
+      :type,
+      :transaction_date,
+      :avg_trade_price,
+      :currency,
+      :fees,
+      :quantity,
+      :instrument_id
+    ])
     |> validate()
     |> Repo.update()
     |> notify_update(org_txn)
@@ -54,12 +77,10 @@ defmodule Catalyst.Portfolio.Trade do
   end
 
   defp notify_creation(event) do
-    val = case event do
+    case event do
       {:ok, txn} -> broadcast({:create, txn})
       {:error, changeset} -> changeset
     end
-    IO.inspect(val)
-    val
   end
 
   defp notify_deletion(event) do

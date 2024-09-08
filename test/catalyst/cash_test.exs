@@ -18,7 +18,7 @@ defmodule Catalyst.CashTest do
       txn_data = txn_data()
       Cash.create_txn(txn_data)
       assert Repo.all(Cash) |> Enum.count() == 1
-      assert_receive {:create,_}
+      assert_receive {:create, _}
     end
 
     test "update transaction" do
@@ -30,7 +30,7 @@ defmodule Catalyst.CashTest do
       Cash.update_txn(txn, %{type: :withdraw})
       %{type: updated_type} = updated_txn = Repo.all(Cash) |> Enum.at(0)
       assert ^updated_type = :withdraw
-      assert_receive {:update,_txn,_txn2}
+      assert_receive {:update, _txn, _txn2}
     end
 
     test "delete transaction" do
@@ -39,7 +39,7 @@ defmodule Catalyst.CashTest do
       assert Repo.all(Cash) |> Enum.count() == 1
       Cash.delete_txn(Repo.all(Cash) |> Enum.at(0))
       assert Repo.all(Cash) |> Enum.count() == 0
-      assert_receive {:delete,_any}
+      assert_receive {:delete, _any}
     end
   end
 

@@ -19,7 +19,7 @@ defmodule Catalyst.TradesTest do
       txn_data = trade_data()
       Trade.create_trade(txn_data)
       assert Repo.all(Trade) |> Enum.count() == 1
-      assert_receive {:create,_}
+      assert_receive {:create, _}
     end
 
     test "update transaction" do
@@ -31,7 +31,7 @@ defmodule Catalyst.TradesTest do
       Trade.update_trade(txn, %{type: :sell})
       %{type: updated_type} = updated_txn = Repo.all(Trade) |> Enum.at(0)
       assert ^updated_type = :sell
-      assert_receive {:update,_txn,_txn2}
+      assert_receive {:update, _txn, _txn2}
     end
 
     test "delete transaction" do
@@ -40,7 +40,7 @@ defmodule Catalyst.TradesTest do
       assert Repo.all(Trade) |> Enum.count() == 1
       Trade.delete_trade(Repo.all(Trade) |> Enum.at(0))
       assert Repo.all(Trade) |> Enum.count() == 0
-      assert_receive {:delete,_any}
+      assert_receive {:delete, _any}
     end
   end
 

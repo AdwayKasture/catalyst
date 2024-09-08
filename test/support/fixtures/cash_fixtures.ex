@@ -1,5 +1,6 @@
 defmodule Catalyst.CashFixtures do
   alias Catalyst.MarketData.Instrument
+
   def txn_data() do
     %{
       type: :deposit,

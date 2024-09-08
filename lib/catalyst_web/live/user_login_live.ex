@@ -3,7 +3,7 @@ defmodule CatalystWeb.UserLoginLive do
 
   def render(assigns) do
     ~H"""
-    <div class="mx-auto max-w-sm">
+    <div class="mx-auto max-w-sm min-h-">
       <.header class="text-center">
         Log in to account
         <:subtitle>

@@ -9,8 +9,9 @@ defmodule CatalystWeb.UserLoginLiveTest do
       {:ok, _lv, html} = live(conn, ~p"/users/log_in")
 
       assert html =~ "Log in"
-      assert html =~ "Register"
+      assert html =~ "Sign up"
       assert html =~ "Forgot your password?"
+      assert html =~ "Keep me logged in"
     end
 
     test "redirects if already logged in", %{conn: conn} do
@@ -18,7 +19,7 @@ defmodule CatalystWeb.UserLoginLiveTest do
         conn
         |> log_in_user(user_fixture())
         |> live(~p"/users/log_in")
-        |> follow_redirect(conn, "/")
+        |> follow_redirect(conn, "/dashboard")
 
       assert {:ok, _conn} = result
     end
@@ -36,7 +37,7 @@ defmodule CatalystWeb.UserLoginLiveTest do
 
       conn = submit_form(form, conn)
 
-      assert redirected_to(conn) == ~p"/"
+      assert redirected_to(conn) == ~p"/dashboard"
     end
 
     test "redirects to login page with a flash error if there are no valid credentials", %{
