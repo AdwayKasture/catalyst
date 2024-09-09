@@ -1,4 +1,7 @@
 <main class="px-4 pt-20 pb-80 sm:px-6 lg:px-8">
+  <nav>
+    <.live_component module={CatalystWeb.Sidebar} id="side_bar" current_user={@current_user} />
+  </nav>
   <div class="mx-auto max-w-2xl">
     <.flash_group flash={@flash} />
     <%= @inner_content %>
