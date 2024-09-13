@@ -3,7 +3,7 @@ defmodule Catalyst.CashTest do
   alias Catalyst.AccountsFixtures
   use Catalyst.DataCase
   import Catalyst.CashFixtures
-  alias Catalyst.Portfolio.Cash
+  alias Catalyst.PortfolioData.Cash
 
   describe "CRUD tests for cash " do
     setup do

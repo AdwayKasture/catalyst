@@ -93,7 +93,10 @@ defmodule CatalystWeb.UserAuth do
   def fetch_current_user(conn, _opts) do
     {user_token, conn} = ensure_user_token(conn)
     user = user_token && Accounts.get_user_by_session_token(user_token)
-    assign(conn, :current_user, user)
+
+    conn
+    |> maybe_user_session(user)
+    |> assign(:current_user, user)
   end
 
   defp ensure_user_token(conn) do
@@ -107,6 +110,14 @@ defmodule CatalystWeb.UserAuth do
       else
         {nil, conn}
       end
+    end
+  end
+
+  defp maybe_user_session(conn, user) do
+    if user == nil do
+      conn
+    else
+      put_session(conn, "user_id", user.id)
     end
   end
 

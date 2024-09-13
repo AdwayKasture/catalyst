@@ -18,4 +18,8 @@ defmodule Catalyst.Market do
   def autocomplete_list(query) do
     InstrumentsCache.autocomplete_list(query)
   end
+
+  def instrument(instrument_id) do
+    InstrumentsCache.get_instrument(instrument_id)
+  end
 end

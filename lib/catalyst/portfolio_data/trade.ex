@@ -1,6 +1,7 @@
-defmodule Catalyst.Portfolio.Trade do
+defmodule Catalyst.PortfolioData.Trade do
+  alias Catalyst.MarketData.InstrumentsCache
   alias Catalyst.Repo
-  alias Catalyst.Portfolio.Trade
+  alias Catalyst.PortfolioData.Trade
   use Ecto.Schema
   import Ecto.Changeset
 
@@ -36,8 +37,8 @@ defmodule Catalyst.Portfolio.Trade do
     |> validate_number(:fees, greater_than_or_equal_to: 0, less_than_or_equal_to: 100)
   end
 
-  def create_trade(attrs) do
-    %Trade{}
+  def create_changeset(trade \\ %Trade{}, attrs) when is_struct(trade, Trade) do
+    trade
     |> cast(attrs, [
       :type,
       :transaction_date,
@@ -48,8 +49,12 @@ defmodule Catalyst.Portfolio.Trade do
       :instrument_id
     ])
     |> put_change(:currency, "INR")
-    |> validate()
     |> put_change(:user_id, Repo.get_user_id())
+    |> validate()
+  end
+
+  def create_trade(attrs) do
+    create_changeset(attrs)
     |> Repo.insert()
     |> notify_creation()
   end
@@ -76,28 +81,42 @@ defmodule Catalyst.Portfolio.Trade do
     |> notify_deletion()
   end
 
+  def get_history() do
+    Repo.all(Trade)
+    |> Stream.map(&enrich_instrument/1)
+  end
+
+  def get(id) do
+    Repo.get!(Trade, id)
+    |> enrich_instrument()
+  end
+
   defp notify_creation(event) do
     case event do
-      {:ok, txn} -> broadcast({:create, txn})
-      {:error, changeset} -> changeset
+      {:ok, txn} -> {broadcast({:create, txn}), "Trade created successfully"}
+      {:error, changeset} -> {:error, changeset}
     end
   end
 
   defp notify_deletion(event) do
     case event do
-      {:ok, txn} -> broadcast({:delete, txn})
-      {:error, changeset} -> changeset
+      {:ok, txn} -> {broadcast({:delete, txn}), "Trade deleted successfully"}
+      {:error, changeset} -> {:error, changeset}
     end
   end
 
   defp notify_update(event, original_txn) do
     case event do
-      {:ok, txn} -> broadcast({:update, original_txn, txn})
-      {:error, changeset} -> changeset
+      {:ok, txn} -> {broadcast({:update, original_txn, txn}), "Trade updated successfully"}
+      {:error, changeset} -> {:error, changeset}
     end
   end
 
   defp broadcast(data) do
-    Phoenix.PubSub.broadcast(Catalyst.PubSub, "trades", data)
+    Phoenix.PubSub.broadcast!(Catalyst.PubSub, "trades", data)
+  end
+
+  defp enrich_instrument(trade) do
+    %{trade | instrument: InstrumentsCache.get_instrument(trade.instrument_id)}
   end
 end

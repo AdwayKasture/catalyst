@@ -13,6 +13,7 @@ defmodule CatalystWeb.Sidebar do
             <%= for {label, path} <- menu_items() do %>
               <.nav_item path={path} label={label} />
             <% end %>
+            <.log_out />
           </nav>
         </aside>
       <% else %>
@@ -49,12 +50,23 @@ defmodule CatalystWeb.Sidebar do
     """
   end
 
+  def log_out(assigns) do
+    ~H"""
+    <.link
+      href="/users/log_out"
+      method="delete"
+      class="block py-2.5 px-4 rounded transition duration-200 hover:bg-gray-700"
+    >
+      Log out
+    </.link>
+    """
+  end
+
   defp menu_items do
     [
       {"Home", "/dashboard"},
       {"Transactions", "/history"},
-      {"Settings", "/users/settings"},
-      {"log out", "/"}
+      {"Settings", "/users/settings"}
     ]
   end
 end

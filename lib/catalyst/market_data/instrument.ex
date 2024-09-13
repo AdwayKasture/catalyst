@@ -14,7 +14,7 @@ defmodule Catalyst.MarketData.Instrument do
     field :segment, :string
     field :scrip_group, :string
 
-    has_many :trades, Catalyst.Portfolio.Trade
+    has_many :trades, Catalyst.PortfolioData.Trade
 
     timestamps(type: :utc_datetime)
   end

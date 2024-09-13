@@ -41,7 +41,13 @@ defmodule CatalystWeb.UserRegistrationLiveTest do
       {:ok, lv, _html} = live(conn, ~p"/users/register")
 
       email = unique_user_email()
-      form = form(lv, "#registration_form", user: valid_user_attributes(email: email))
+      username = unique_user_email()
+
+      form =
+        form(lv, "#registration_form",
+          user: valid_user_attributes(email: email, username: username)
+        )
+
       render_submit(form)
       conn = follow_trigger_action(form, conn)
 
@@ -52,12 +58,12 @@ defmodule CatalystWeb.UserRegistrationLiveTest do
 
       assert redirected_to(conn) == ~p"/dashboard"
 
-      # response = html_response(conn, 302)
+      conn = get(conn, "/dashboard")
+      response = html_response(conn, 200)
 
-      # TODO update after adding nav bar
-      # assert response =~ email
-      # assert response =~ "Settings"
-      # assert response =~ "Log out"
+      assert response =~ username
+      assert response =~ "Settings"
+      assert response =~ "Log out"
     end
 
     test "renders errors for duplicated email", %{conn: conn} do

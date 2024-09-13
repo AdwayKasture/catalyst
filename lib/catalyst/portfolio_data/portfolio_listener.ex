@@ -1,4 +1,4 @@
-defmodule Catalyst.Portfolio.PortfolioListener do
+defmodule Catalyst.PortfolioData.PortfolioListener do
   alias Phoenix.PubSub
 
   @listener_name __MODULE__

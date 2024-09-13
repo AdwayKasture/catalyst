@@ -1,5 +1,5 @@
 defmodule Catalyst.TradesTest do
-  alias Catalyst.Portfolio.Trade
+  alias Catalyst.PortfolioData.Trade
   alias Phoenix.PubSub
   alias Catalyst.AccountsFixtures
   use Catalyst.DataCase
