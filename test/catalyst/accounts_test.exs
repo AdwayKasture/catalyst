@@ -10,7 +10,7 @@ defmodule Catalyst.AccountsTest do
     test "return username if account exists" do
       %{id: id, username: username_inp} = user = user_fixture()
       assert %User{id: ^id, username: username} = Accounts.get_user_by_email(user.email)
-      assert username_inp = username
+      assert username_inp == username
     end
   end
 
@@ -97,7 +97,7 @@ defmodule Catalyst.AccountsTest do
     end
 
     test "validate username uniqueness" do
-      %{email: email, username: username} = user_fixture()
+      %{username: username} = user_fixture()
       {:error, changeset} = Accounts.register_user(%{username: username})
       assert "has already been taken" in errors_on(changeset).username
     end

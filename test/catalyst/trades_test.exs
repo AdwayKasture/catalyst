@@ -8,7 +8,7 @@ defmodule Catalyst.TradesTest do
   describe "CRUD tests for cash " do
     setup do
       user = AccountsFixtures.user_fixture()
-      Repo.insert(get_instrument())
+      Repo.insert(get_instrumentA())
       Repo.put_user_id(user.id)
       PubSub.subscribe(Catalyst.PubSub, "trades")
       {:ok, user_logged_in: true}
@@ -29,7 +29,7 @@ defmodule Catalyst.TradesTest do
       %{type: type} = txn = Repo.all(Trade) |> Enum.at(0)
       assert ^type = :buy
       Trade.update_trade(txn, %{type: :sell})
-      %{type: updated_type} = updated_txn = Repo.all(Trade) |> Enum.at(0)
+      %{type: updated_type} = Repo.all(Trade) |> Enum.at(0)
       assert ^updated_type = :sell
       assert_receive {:update, _txn, _txn2}
     end
@@ -42,8 +42,5 @@ defmodule Catalyst.TradesTest do
       assert Repo.all(Trade) |> Enum.count() == 0
       assert_receive {:delete, _any}
     end
-  end
-
-  describe "validations" do
   end
 end

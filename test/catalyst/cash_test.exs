@@ -28,7 +28,7 @@ defmodule Catalyst.CashTest do
       %{type: type} = txn = Repo.all(Cash) |> Enum.at(0)
       assert ^type = :deposit
       Cash.update_txn(txn, %{type: :withdraw})
-      %{type: updated_type} = updated_txn = Repo.all(Cash) |> Enum.at(0)
+      %{type: updated_type} = Repo.all(Cash) |> Enum.at(0)
       assert ^updated_type = :withdraw
       assert_receive {:update, _txn, _txn2}
     end

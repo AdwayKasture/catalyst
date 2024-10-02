@@ -19,7 +19,7 @@ defmodule CatalystWeb.DashBoardLiveTest do
       assert html =~ ~p"/"
     end
 
-    test "test buttons for creating transactions are present ", %{conn: conn, user: user} do
+    test "test buttons for creating transactions are present ", %{conn: conn} do
       html = html_response(conn, 200)
       assert html =~ "Log trade\n</button>"
       assert html =~ "Log transaction\n</button>"
@@ -28,6 +28,10 @@ defmodule CatalystWeb.DashBoardLiveTest do
     test "test create transaction", %{conn: conn} do
       assert Repo.all(Cash) |> Enum.count() == 0
       {:ok, lv, _html} = live(conn, ~p"/dashboard")
+
+      lv
+      |> element("button", "Log transaction")
+      |> render_click()
 
       assert {:ok, _lv, _html} =
                lv
@@ -43,6 +47,10 @@ defmodule CatalystWeb.DashBoardLiveTest do
     test "test create transaction fails with missing amount", %{conn: conn} do
       {:ok, lv, _html} = live(conn, ~p"/dashboard")
 
+      lv
+      |> element("button", "Log transaction")
+      |> render_click()
+
       html =
         lv
         |> form("#cash-form", cash: %{transaction_date: ~D[2024-09-12]})
@@ -55,6 +63,10 @@ defmodule CatalystWeb.DashBoardLiveTest do
 
     test "test create transaction fails with missing date", %{conn: conn} do
       {:ok, lv, _html} = live(conn, ~p"/dashboard")
+
+      lv
+      |> element("button", "Log transaction")
+      |> render_click()
 
       html =
         lv

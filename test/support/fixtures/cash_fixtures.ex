@@ -21,7 +21,7 @@ defmodule Catalyst.CashFixtures do
     }
   end
 
-  def get_instrument() do
+  def get_instrumentA() do
     %Instrument{
       ticker: "1000",
       isin: "1000",
@@ -30,6 +30,18 @@ defmodule Catalyst.CashFixtures do
       segment: "A",
       scrip_group: "A",
       instrument_id: "1000"
+    }
+  end
+
+  def get_instrumentB() do
+    %Instrument{
+      ticker: "1001",
+      isin: "1001",
+      instrument_type: "something",
+      instrument_name: "anton",
+      segment: "A",
+      scrip_group: "A",
+      instrument_id: "1001"
     }
   end
 end
