@@ -13,6 +13,11 @@ defmodule CatalystWeb.Sidebar do
             <%= for {label, path} <- menu_items() do %>
               <.nav_item path={path} label={label} />
             <% end %>
+            <%= if @current_user.role == :admin do %>
+              <%= for {label, path} <- admin_items() do %>
+                <.nav_item path={path} label={label} />
+              <% end %>
+            <% end %>
             <.log_out />
           </nav>
         </aside>
@@ -67,6 +72,12 @@ defmodule CatalystWeb.Sidebar do
       {"Home", "/dashboard"},
       {"Transactions", "/history"},
       {"Settings", "/users/settings"}
+    ]
+  end
+
+  defp admin_items do
+    [
+      {"Data", "/admin"}
     ]
   end
 end

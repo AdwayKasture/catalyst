@@ -71,6 +71,15 @@ defmodule CatalystWeb.Router do
   end
 
   scope "/", CatalystWeb do
+    pipe_through [:browser, :require_authenticated_user]
+
+    live_session :require_admin,
+      on_mount: [{CatalystWeb.UserAuth, :ensure_admin}] do
+      live "/admin", DataConfigLive
+    end
+  end
+
+  scope "/", CatalystWeb do
     pipe_through [:browser]
 
     delete "/users/log_out", UserSessionController, :delete

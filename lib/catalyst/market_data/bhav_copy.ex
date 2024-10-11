@@ -51,7 +51,10 @@ defmodule Catalyst.MarketData.BhavCopy do
     |> fetch_data_for_date
     |> String.split("\n", trim: true)
     |> parse_rows_to_bhavcopy
-    |> handle_insert
+    |> update_instruments()
+    |> Enum.map(&to_map/1)
+    |> Enum.chunk_every(100)
+    |> Enum.each(fn chunk -> Repo.insert_all(BhavCopy, chunk) end)
 
     {:ok, :data_loaded}
   end
@@ -68,12 +71,35 @@ defmodule Catalyst.MarketData.BhavCopy do
       path
       |> File.stream!()
       |> parse_rows_to_bhavcopy
-      |> handle_insert()
+      |> update_instruments()
+      |> Enum.map(&to_map/1)
+      |> Enum.chunk_every(100)
+      |> Enum.each(fn chunk -> Repo.insert_all(BhavCopy, chunk) end)
 
       {:ok, :data_loaded}
     end
 
     {:ok, :already_fetched}
+  end
+
+  def load_data_from_zip(path) do
+    upload_folder = Path.join([:code.priv_dir(:catalyst), "static", "uploads"])
+    {:ok, file_list} = :zip.unzip(to_charlist(path), [{:cwd, to_charlist(upload_folder)}])
+
+    file_list
+    |> Stream.map(&to_string/1)
+    |> Enum.each(fn file_name -> load_data_from_csv(file_name) end)
+
+    {:ok, :finished_processing}
+  end
+
+  def fetch_data_from_file(path, file_extension) do
+    case file_extension do
+      ".zip" -> load_data_from_zip(path)
+      ".csv" -> load_data_from_csv(path)
+    end
+
+    {:ok, :market_data_loaded}
   end
 
   defp fetch_data_for_date(date) do
@@ -161,13 +187,12 @@ defmodule Catalyst.MarketData.BhavCopy do
     }
   end
 
-  defp handle_insert(bhav_copy) do
+  defp update_instruments(bhav_copy) do
     bhav_copy
     |> Enum.map(&update_instruments_if_absent(&1))
-    |> Enum.map(&Repo.insert(&1))
   end
 
-  defp update_instruments_if_absent(bhavCopy) do
+  defp update_instruments_if_absent(bhavCopy) when is_struct(bhavCopy, BhavCopy) do
     unless InstrumentsCache.instrument?(bhavCopy.instrument_id) do
       instrument = %Instrument{
         instrument_id: bhavCopy.instrument_id,
@@ -189,6 +214,16 @@ defmodule Catalyst.MarketData.BhavCopy do
     bhavCopy
   end
 
+  defp to_map(bhav_copy) when is_struct(bhav_copy, BhavCopy) do
+    now = NaiveDateTime.utc_now() |> NaiveDateTime.truncate(:second)
+
+    bhav_copy
+    |> Map.take(BhavCopy.__schema__(:fields))
+    |> Map.delete(:id)
+    |> Map.put(:inserted_at, now)
+    |> Map.put(:updated_at, now)
+  end
+
   def cp_for(instrument_id, date) when is_struct(date, Date) do
     filters = [instrument_id: instrument_id, trade_date: date]
     query = from rec in BhavCopy, where: ^filters
@@ -203,7 +238,8 @@ defmodule Catalyst.MarketData.BhavCopy do
   end
 
   defp data_fetched(date) when is_struct(date, Date) do
-    [{count}] = Repo.all(from rec in BhavCopy, where: [trade_date: ^date], select: {count(rec)})
+    query = from rec in BhavCopy, where: [trade_date: ^date], select: {count(rec)}
+    [{count}] = Repo.all(query, skip_user_id: true)
 
     if count > 0 do
       true

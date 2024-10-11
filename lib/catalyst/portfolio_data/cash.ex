@@ -65,6 +65,28 @@ defmodule Catalyst.PortfolioData.Cash do
     end
   end
 
+  def for(date) when is_struct(date, Date) do
+    get_history()
+    |> Stream.filter(&on_or_before(&1.transaction_date, date))
+    |> Enum.reduce(Decimal.new(0), fn txn, acc -> Decimal.add(cash_val(txn), acc) end)
+  end
+
+  defp on_or_before(trade_date, cutoff)
+       when is_struct(cutoff, Date) and is_struct(trade_date, Date) do
+    case Timex.compare(trade_date, cutoff) do
+      -1 -> true
+      0 -> true
+      1 -> false
+    end
+  end
+
+  defp cash_val(txn) when is_struct(txn, Cash) do
+    case txn.type do
+      :deposit -> txn.amount
+      :withdraw -> Decimal.negate(txn.amount)
+    end
+  end
+
   defp notify_deletion(event) do
     case event do
       {:ok, txn} -> {broadcast({:delete, txn}), "Transaction deleted successfully"}

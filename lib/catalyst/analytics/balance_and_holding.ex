@@ -1,7 +1,9 @@
 defmodule Catalyst.Analytics.State do
-  defstruct balance: %{}, holdings: %{}
+  defstruct balance: %{}, holdings: %{}, buy_quantity: %{}, avg_buy_price: %{}
 end
 
+# TODO optimize by ets caching / agent
+# take into consideration create/update of a trade
 defmodule Catalyst.Analytics.BalanceAndHolding do
   alias Catalyst.DateTime.DateUtils
   alias Catalyst.Analytics.State
@@ -30,15 +32,31 @@ defmodule Catalyst.Analytics.BalanceAndHolding do
   end
 
   defp merge(elem, acc) when is_struct(elem, Trade) and is_struct(acc, State) do
+    new_avg_buy_price = update_avg_buy_price(elem, acc)
     new_bal = update_balance(elem, acc)
     new_holdings = update_holdings(elem, acc)
-    %State{balance: new_bal, holdings: new_holdings}
+    new_buy_quantity = update_buy_quantity(elem, acc)
+
+    %State{
+      balance: new_bal,
+      holdings: new_holdings,
+      buy_quantity: new_buy_quantity,
+      avg_buy_price: new_avg_buy_price
+    }
   end
 
   defp merge(l, r) when is_struct(l, State) and is_struct(r, State) do
+    new_avg_buy_price = update_avg_buy_price(l, r)
     new_holding = Map.merge(l.holdings, r.holdings, fn _k, q1, q2 -> q1 + q2 end)
     new_balance = Map.merge(l.balance, r.balance, fn _k, v1, v2 -> Decimal.add(v1, v2) end)
-    %State{balance: new_balance, holdings: new_holding}
+    new_buy_quantity = Map.merge(l.buy_quantity, r.buy_quantity, fn _k, q1, q2 -> q1 + q2 end)
+
+    %State{
+      balance: new_balance,
+      holdings: new_holding,
+      avg_buy_price: new_avg_buy_price,
+      buy_quantity: new_buy_quantity
+    }
   end
 
   defp update_balance(trade, state) when is_struct(trade, Trade) and is_struct(state, State) do
@@ -48,6 +66,37 @@ defmodule Catalyst.Analytics.BalanceAndHolding do
       gross_value(trade),
       &Decimal.add(&1, gross_value(trade))
     )
+  end
+
+  defp update_avg_buy_price(trade, state)
+       when is_struct(trade, Trade) and is_struct(state, State) do
+    case trade.type do
+      :sell ->
+        state.avg_buy_price
+
+      :buy ->
+        Map.update(state.avg_buy_price, trade.instrument_id, avg_buy_price(trade), fn _v ->
+          update_avg(trade, state)
+        end)
+    end
+  end
+
+  defp update_avg_buy_price(l, r) when is_struct(l, State) and is_struct(r, State) do
+    Map.merge(l.avg_buy_price, r.avg_buy_price, fn k, avg1, avg2 ->
+      weighted_avg(Map.get(l.buy_quantity, k), avg1, Map.get(r.buy_quantity, k), avg2)
+    end)
+  end
+
+  defp weighted_avg(q1, avg1, q2, avg2) do
+    tot = q1 + q2
+
+    gross1 = Decimal.mult(q1, avg1)
+    gross2 = Decimal.mult(q2, avg2)
+
+    case tot do
+      0 -> Decimal.new(0)
+      total -> Decimal.add(gross1, gross2) |> Decimal.div(total)
+    end
   end
 
   defp update_holdings(trade, state) when is_struct(trade, Trade) and is_struct(state, State) do
@@ -65,6 +114,22 @@ defmodule Catalyst.Analytics.BalanceAndHolding do
     end
   end
 
+  defp update_buy_quantity(trade, state)
+       when is_struct(trade, Trade) and is_struct(state, State) do
+    case trade.type do
+      :buy ->
+        Map.update(
+          state.buy_quantity,
+          trade.instrument_id,
+          trade.quantity,
+          &(&1 + trade.quantity)
+        )
+
+      :sell ->
+        state.buy_quantity
+    end
+  end
+
   defp gross_value(trade) when is_struct(trade, Trade) do
     case trade.type do
       :buy ->
@@ -75,7 +140,27 @@ defmodule Catalyst.Analytics.BalanceAndHolding do
     end
   end
 
+  defp avg_buy_price(trade) when is_struct(trade, Trade) do
+    case trade.type do
+      :buy -> trade.avg_trade_price
+      :sell -> Decimal.new(0)
+    end
+  end
+
+  defp update_avg(trade, state) when is_struct(trade, Trade) and is_struct(state, State) do
+    holding_quantity = Map.get(state.buy_quantity, trade.instrument_id, 0)
+    holding_buy_price = Map.get(state.avg_buy_price, trade.instrument_id, 0)
+
+    case trade.type do
+      :buy ->
+        weighted_avg(trade.quantity, trade.avg_trade_price, holding_quantity, holding_buy_price)
+
+      :sell ->
+        holding_buy_price
+    end
+  end
+
   defp empty_state() do
-    %State{balance: %{}, holdings: %{}}
+    %State{balance: %{}, holdings: %{}, avg_buy_price: %{}, buy_quantity: %{}}
   end
 end

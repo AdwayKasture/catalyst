@@ -19,7 +19,8 @@ defmodule Catalyst.Application do
       # {Catalyst.Worker, arg},
       # Start to serve requests, typically the last entry
       CatalystWeb.Endpoint,
-      {Oban, oban_config()}
+      {Oban, oban_config()},
+      {Task.Supervisor, name: Catalyst.TaskSupervisor}
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html
