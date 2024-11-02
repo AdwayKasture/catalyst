@@ -1,4 +1,5 @@
 defmodule Catalyst.DateTime.DateUtils do
+  alias Catalyst.DateTime.MarketHoliday
   @origin_date ~D[2024-01-01]
 
   def origin_date() do
@@ -6,11 +7,11 @@ defmodule Catalyst.DateTime.DateUtils do
   end
 
   def market_holiday?(date) when is_struct(date, Date) do
-    false
+    MarketHoliday.is_holiday?(date)
   end
 
   def date_after_origin!(date) when is_struct(date, Date) do
-    unless Timex.after?(date, origin_date()) do
+    if Timex.before?(date, origin_date()) do
       raise ArgumentError, "Date cannot be earlier than 2024-01-01"
     end
   end

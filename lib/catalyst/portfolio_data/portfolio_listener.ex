@@ -1,4 +1,6 @@
 defmodule Catalyst.PortfolioData.PortfolioListener do
+  alias Catalyst.Repo
+  alias Catalyst.PortfolioData.PortfolioSnapshot
   alias Phoenix.PubSub
 
   @listener_name __MODULE__
@@ -20,6 +22,7 @@ defmodule Catalyst.PortfolioData.PortfolioListener do
 
   def init() do
     PubSub.subscribe(Catalyst.PubSub, "transactions")
+    PubSub.subscribe(Catalyst.PubSub, "trades")
     state_loop()
   end
 
@@ -31,18 +34,31 @@ defmodule Catalyst.PortfolioData.PortfolioListener do
     state_loop()
   end
 
-  defp process_event({:create, _txn}) do
-    IO.puts("create observed")
+  defp process_event({_event_type, :create, txn}) do
+    # todo handle after today
+    portfolio_task(:create, txn, txn.user_id)
     :ok
   end
 
-  defp process_event({:update, _txn, _org_txn}) do
-    IO.puts("update observed")
+  defp process_event({_event_type, :update, txn, old_txn}) do
+    # handle after today
+    portfolio_task(:update, {old_txn, txn}, old_txn.user_id)
     :ok
   end
 
-  defp process_event({:delete, _txn}) do
-    IO.puts("delete observed")
+  defp process_event({_event_type, :delete, txn}) do
+    portfolio_task(:delete, txn, txn.user_id)
     :ok
+  end
+
+  defp portfolio_task(type, event, user_id) do
+    task =
+      Task.Supervisor.async(Catalyst.TaskSupervisor, fn ->
+        Repo.put_user_id(user_id)
+
+        PortfolioSnapshot.update_snapshot_for(type, event, Timex.today())
+      end)
+
+    Task.await(task)
   end
 end

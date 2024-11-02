@@ -1,4 +1,5 @@
 defmodule CatalystWeb.DashBoardLive do
+  alias Catalyst.Portfolio
   use CatalystWeb, :live_view
 
   @impl true
@@ -19,7 +20,14 @@ defmodule CatalystWeb.DashBoardLive do
         <.link>ytd</.link>
       </div>
       <div class="border p-5 flex justify-center ">
-        <canvas class="border" id="my-chart" phx-hook="ChartJS"></canvas>
+        <canvas
+          class="border"
+          id="my-chart"
+          phx-hook="ChartJS"
+          data-dates={Jason.encode!(@dates)}
+          data-valuations={Jason.encode!(@valuations)}
+        >
+        </canvas>
       </div>
       <div class="p-5 border">
         table name
@@ -49,7 +57,13 @@ defmodule CatalystWeb.DashBoardLive do
 
   @impl true
   def mount(_params, _session, socket) do
-    {:ok, assign(socket, active_modal: nil)}
+    {dates, valuations} = Portfolio.get_snapshot()
+
+    {:ok,
+     socket
+     |> assign(active_modal: nil)
+     |> assign(dates: dates)
+     |> assign(valuations: valuations)}
   end
 
   @impl true
@@ -64,6 +78,6 @@ defmodule CatalystWeb.DashBoardLive do
 
   @impl true
   def handle_event("closed", _unsigned_params, socket) do
-    {:noreply, socket |> assign(trade_action: :new, cash_action: :new, active_modal: nil)}
+    {:noreply, socket |> assign(active_modal: nil)}
   end
 end

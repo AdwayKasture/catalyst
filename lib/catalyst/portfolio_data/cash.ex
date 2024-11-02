@@ -20,6 +20,20 @@ defmodule Catalyst.PortfolioData.Cash do
     |> validate_required([:type, :transaction_date, :amount, :currency])
     |> validate_number(:amount, greater_than: 0)
     |> validate_number(:fees, greater_than_or_equal_to: 0, less_than_or_equal_to: 100)
+    |> validate(:transaction_date)
+  end
+
+  defp validate(changeset, :transaction_date = field) do
+    txn_date = get_field(changeset, field)
+
+    if is_nil(txn_date) do
+      changeset
+    else
+      case !Timex.after?(txn_date, Timex.today()) do
+        true -> changeset
+        false -> add_error(changeset, field, "transaction date must  be on/before today")
+      end
+    end
   end
 
   def create_changeset(txn \\ %Cash{}, attrs) do
@@ -60,44 +74,25 @@ defmodule Catalyst.PortfolioData.Cash do
 
   defp notify_creation(event) do
     case event do
-      {:ok, txn} -> {broadcast({:create, txn}), "Transaction created successfully"}
+      {:ok, txn} -> {broadcast({:cash, :create, txn}), "Transaction created successfully"}
       {:error, changeset} -> {:error, changeset}
-    end
-  end
-
-  def for(date) when is_struct(date, Date) do
-    get_history()
-    |> Stream.filter(&on_or_before(&1.transaction_date, date))
-    |> Enum.reduce(Decimal.new(0), fn txn, acc -> Decimal.add(cash_val(txn), acc) end)
-  end
-
-  defp on_or_before(trade_date, cutoff)
-       when is_struct(cutoff, Date) and is_struct(trade_date, Date) do
-    case Timex.compare(trade_date, cutoff) do
-      -1 -> true
-      0 -> true
-      1 -> false
-    end
-  end
-
-  defp cash_val(txn) when is_struct(txn, Cash) do
-    case txn.type do
-      :deposit -> txn.amount
-      :withdraw -> Decimal.negate(txn.amount)
     end
   end
 
   defp notify_deletion(event) do
     case event do
-      {:ok, txn} -> {broadcast({:delete, txn}), "Transaction deleted successfully"}
+      {:ok, txn} -> {broadcast({:cash, :delete, txn}), "Transaction deleted successfully"}
       {:error, changeset} -> {:error, changeset}
     end
   end
 
   defp notify_update(event, original_txn) do
     case event do
-      {:ok, txn} -> {broadcast({:update, original_txn, txn}), "Transaction updated successfully"}
-      {:error, changeset} -> {:error, changeset}
+      {:ok, txn} ->
+        {broadcast({:cash, :update, original_txn, txn}), "Transaction updated successfully"}
+
+      {:error, changeset} ->
+        {:error, changeset}
     end
   end
 

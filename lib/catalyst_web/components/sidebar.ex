@@ -13,7 +13,7 @@ defmodule CatalystWeb.Sidebar do
             <%= for {label, path} <- menu_items() do %>
               <.nav_item path={path} label={label} />
             <% end %>
-            <%= if @current_user.role == :admin do %>
+            <%= if @current_user.role == :user do %>
               <%= for {label, path} <- admin_items() do %>
                 <.nav_item path={path} label={label} />
               <% end %>

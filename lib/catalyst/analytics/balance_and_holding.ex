@@ -1,32 +1,100 @@
 defmodule Catalyst.Analytics.State do
-  defstruct balance: %{}, holdings: %{}, buy_quantity: %{}, avg_buy_price: %{}
+  defstruct balance: %{},
+            holdings: %{},
+            buy_quantity: %{},
+            avg_buy_price: %{},
+            cash: Decimal.new(0)
 end
 
 # TODO optimize by ets caching / agent
 # take into consideration create/update of a trade
 defmodule Catalyst.Analytics.BalanceAndHolding do
+  alias Catalyst.Repo
+  alias Catalyst.Analytics.BalanceHoldingsCache
+  alias Catalyst.PortfolioData.Cash
   alias Catalyst.DateTime.DateUtils
   alias Catalyst.Analytics.State
   alias Catalyst.PortfolioData.Trade
 
+  defguardp valid_event(event) when is_struct(event, Cash) or is_struct(event, Trade)
+
+  def fetch_from_cache(date) when is_struct(date, Date) do
+    key = {date, Repo.get_user_id()}
+
+    case BalanceHoldingsCache.get(key) do
+      [{_key, val}] -> val
+    end
+  end
+
+  def calculate(date, events) when is_struct(date, Date) do
+    DateUtils.date_after_origin!(date)
+    calc_rec(date, empty_state(), events)
+  end
+
   def calculate(date) when is_struct(date, Date) do
     DateUtils.date_after_origin!(date)
+    cash = Cash.get_history() |> Enum.to_list()
     trades = Trade.get_history() |> Enum.to_list()
-    calc_rec(date, empty_state(), trades)
+    calc_rec(date, empty_state(), trades ++ cash)
   end
 
-  defp calc_rec(~D[2024-01-01], acc_state, trades) when is_struct(acc_state, State) do
-    merge(acc_state, state_for(DateUtils.origin_date(), trades))
+  def update(:create, event, end_date)
+      when valid_event(event) and is_struct(end_date, Date) do
+    Date.range(event.transaction_date, end_date)
+    |> Enum.map(fn date ->
+      case BalanceHoldingsCache.get({date, event.user_id}) do
+        [{key, val}] -> {key, merge(event, val)}
+      end
+    end)
+    |> Enum.each(fn {key, state} -> BalanceHoldingsCache.put(key, state) end)
   end
 
-  defp calc_rec(date, acc_state, trades)
+  def update(:delete, event, end_date)
+      when valid_event(event) and is_struct(end_date, Date) do
+    reversed = reverse(event)
+    update(:create, reversed, end_date)
+  end
+
+  def update(:update, {new_txn, old_txn}, end_date)
+      when valid_event(old_txn) and valid_event(new_txn) and is_struct(end_date, Date) do
+    update(:delete, old_txn, end_date)
+    update(:create, new_txn, end_date)
+  end
+
+  defp calc_rec(~D[2024-01-01], acc_state, events) when is_struct(acc_state, State) do
+    key = {~D[2024-01-01], Repo.get_user_id()}
+
+    case BalanceHoldingsCache.get(key) do
+      [{_key, val}] ->
+        val
+
+      [] ->
+        res = merge(acc_state, state_for(DateUtils.origin_date(), events))
+        BalanceHoldingsCache.put(key, res)
+        res
+    end
+  end
+
+  defp calc_rec(date, acc_state, events)
        when is_struct(date, Date) and is_struct(acc_state, State) do
-    updated_state = merge(acc_state, state_for(date, trades))
-    calc_rec(Timex.shift(date, days: -1), updated_state, trades)
+    key = {date, Repo.get_user_id()}
+
+    updated_state =
+      case BalanceHoldingsCache.get(key) do
+        [{_key, val}] ->
+          val
+
+        [] ->
+          res = merge(acc_state, state_for(date, events))
+          BalanceHoldingsCache.put(key, res)
+          res
+      end
+
+    calc_rec(Timex.shift(date, days: -1), updated_state, events)
   end
 
-  defp state_for(date, trades) when is_list(trades) and is_struct(date, Date) do
-    trades
+  defp state_for(date, events) when is_struct(date, Date) do
+    events
     |> Enum.filter(&(&1.transaction_date == date))
     |> Enum.reduce(empty_state(), &merge(&1, &2))
   end
@@ -41,8 +109,19 @@ defmodule Catalyst.Analytics.BalanceAndHolding do
       balance: new_bal,
       holdings: new_holdings,
       buy_quantity: new_buy_quantity,
-      avg_buy_price: new_avg_buy_price
+      avg_buy_price: new_avg_buy_price,
+      cash: acc.cash
     }
+  end
+
+  defp merge(elem, acc) when is_struct(elem, Cash) and is_struct(acc, State) do
+    new_cash =
+      case elem.type do
+        :deposit -> Decimal.add(acc.cash, elem.amount)
+        :withdraw -> Decimal.negate(elem.amount) |> Decimal.add(acc.cash)
+      end
+
+    %State{acc | cash: new_cash}
   end
 
   defp merge(l, r) when is_struct(l, State) and is_struct(r, State) do
@@ -50,12 +129,14 @@ defmodule Catalyst.Analytics.BalanceAndHolding do
     new_holding = Map.merge(l.holdings, r.holdings, fn _k, q1, q2 -> q1 + q2 end)
     new_balance = Map.merge(l.balance, r.balance, fn _k, v1, v2 -> Decimal.add(v1, v2) end)
     new_buy_quantity = Map.merge(l.buy_quantity, r.buy_quantity, fn _k, q1, q2 -> q1 + q2 end)
+    new_cash = Decimal.add(l.cash, r.cash)
 
     %State{
       balance: new_balance,
       holdings: new_holding,
       avg_buy_price: new_avg_buy_price,
-      buy_quantity: new_buy_quantity
+      buy_quantity: new_buy_quantity,
+      cash: new_cash
     }
   end
 
@@ -157,6 +238,20 @@ defmodule Catalyst.Analytics.BalanceAndHolding do
 
       :sell ->
         holding_buy_price
+    end
+  end
+
+  defp reverse(cash) when is_struct(cash, Cash) do
+    case cash.type do
+      :deposit -> %Cash{cash | type: :withdraw}
+      :withdraw -> %Cash{cash | type: :deposit}
+    end
+  end
+
+  defp reverse(trade) when is_struct(trade, Trade) do
+    case trade.type do
+      :buy -> %Trade{trade | type: :sell}
+      :sell -> %Trade{trade | type: :buy}
     end
   end
 

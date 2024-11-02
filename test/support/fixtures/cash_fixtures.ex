@@ -10,6 +10,24 @@ defmodule Catalyst.CashFixtures do
     }
   end
 
+  def deposit_cash(amt) do
+    %{
+      type: :deposit,
+      transaction_date: ~D[2024-09-05],
+      amount: Decimal.new(amt),
+      fees: Decimal.new(0)
+    }
+  end
+
+  def withdraw_cash(amt) do
+    %{
+      type: :withdraw,
+      transaction_date: ~D[2024-09-05],
+      amount: Decimal.new(amt),
+      fees: Decimal.new(0)
+    }
+  end
+
   def trade_data() do
     %{
       type: :buy,

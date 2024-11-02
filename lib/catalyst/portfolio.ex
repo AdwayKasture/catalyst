@@ -1,4 +1,6 @@
 defmodule Catalyst.Portfolio do
+  alias Catalyst.PortfolioData.PortfolioSnapshot
+  alias Catalyst.Repo
   alias Catalyst.PortfolioData.Trade
   alias Catalyst.PortfolioData.Cash
 
@@ -39,7 +41,9 @@ defmodule Catalyst.Portfolio do
   def get_history(type) do
     case type do
       "trade" -> Trade.get_history()
+      :trade -> Trade.get_history()
       "cash" -> Cash.get_history()
+      :cash -> Cash.get_history()
     end
   end
 
@@ -59,5 +63,13 @@ defmodule Catalyst.Portfolio do
       :cash -> Cash.get(id)
       "cash" -> Cash.get(id)
     end
+  end
+
+  def get_snapshot() do
+    Repo.all(PortfolioSnapshot)
+    |> Stream.map(fn snp -> {snp.snapshot_date, snp.total_portfolio_value} end)
+    |> Enum.reduce({[], []}, fn {date, val}, {date_acc, val_acc} ->
+      {[date | date_acc], [val | val_acc]}
+    end)
   end
 end

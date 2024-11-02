@@ -35,6 +35,20 @@ defmodule Catalyst.PortfolioData.Trade do
     |> validate_number(:quantity, greater_than: 0)
     |> validate_number(:avg_trade_price, greater_than: 0)
     |> validate_number(:fees, greater_than_or_equal_to: 0, less_than_or_equal_to: 100)
+    |> validate(:transaction_date)
+  end
+
+  defp validate(changeset, :transaction_date = field) do
+    txn_date = get_field(changeset, field)
+
+    if is_nil(txn_date) do
+      changeset
+    else
+      case !Timex.after?(txn_date, Timex.today()) do
+        true -> changeset
+        false -> add_error(changeset, field, "transaction date must  be on/before today")
+      end
+    end
   end
 
   def create_changeset(trade \\ %Trade{}, attrs) when is_struct(trade, Trade) do
@@ -93,22 +107,25 @@ defmodule Catalyst.PortfolioData.Trade do
 
   defp notify_creation(event) do
     case event do
-      {:ok, txn} -> {broadcast({:create, txn}), "Trade created successfully"}
+      {:ok, txn} -> {broadcast({:trade, :create, txn}), "Trade created successfully"}
       {:error, changeset} -> {:error, changeset}
     end
   end
 
   defp notify_deletion(event) do
     case event do
-      {:ok, txn} -> {broadcast({:delete, txn}), "Trade deleted successfully"}
+      {:ok, txn} -> {broadcast({:trade, :delete, txn}), "Trade deleted successfully"}
       {:error, changeset} -> {:error, changeset}
     end
   end
 
   defp notify_update(event, original_txn) do
     case event do
-      {:ok, txn} -> {broadcast({:update, original_txn, txn}), "Trade updated successfully"}
-      {:error, changeset} -> {:error, changeset}
+      {:ok, txn} ->
+        {broadcast({:trade, :update, original_txn, txn}), "Trade updated successfully"}
+
+      {:error, changeset} ->
+        {:error, changeset}
     end
   end
 

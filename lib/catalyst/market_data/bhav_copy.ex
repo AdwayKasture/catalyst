@@ -162,6 +162,12 @@ defmodule Catalyst.MarketData.BhavCopy do
       _rsvd_4
     ] = fields
 
+    sp =
+      case settlement_price do
+        "" -> 0
+        val -> val
+      end
+
     %BhavCopy{
       session_id: session_id,
       trade_date: Date.from_iso8601!(trade_date),
@@ -180,7 +186,7 @@ defmodule Catalyst.MarketData.BhavCopy do
       close_price: Decimal.new(close_price),
       last_price: Decimal.new(last_price),
       previous_close_price: Decimal.new(previous_close_price),
-      settlement_price: Decimal.new(settlement_price),
+      settlement_price: Decimal.new(sp),
       total_traded_volume: String.to_integer(ttl_trade_vol),
       total_traded_value: Decimal.new(ttl_trade_value),
       total_number_of_trades_executed: String.to_integer(ttl_trade_numbers)

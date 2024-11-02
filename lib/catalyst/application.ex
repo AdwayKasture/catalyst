@@ -15,6 +15,9 @@ defmodule Catalyst.Application do
       # Start the Finch HTTP client for sending emails
       {Finch, name: Catalyst.Finch},
       {Catalyst.MarketData.InstrumentsCache, name: Catalyst.MarketData.InstrumentsCache},
+      {Catalyst.Analytics.BalanceHoldingsCache, name: Catalyst.Analytics.BalanceHoldingsCache},
+      {Catalyst.PortfolioData.PortfolioListener, name: Catalyst.PortfolioData.PortfolioListener},
+      {Catalyst.DateTime.MarketHoliday, name: Catalyst.DateTime.MarketHoliday},
       # Start a worker by calling: Catalyst.Worker.start_link(arg)
       # {Catalyst.Worker, arg},
       # Start to serve requests, typically the last entry
