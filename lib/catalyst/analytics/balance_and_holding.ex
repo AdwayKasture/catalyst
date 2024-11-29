@@ -29,7 +29,7 @@ defmodule Catalyst.Analytics.BalanceAndHolding do
   def fetch_last_balance_holding(date \\ Timex.today()) do
     key = {date, Repo.get_user_id()}
 
-    if(DateUtils.date_after_origin?(date)) do
+    if(!DateUtils.date_after_origin?(date)) do
       empty_state()
     else
       case BalanceHoldingsCache.get(key) do

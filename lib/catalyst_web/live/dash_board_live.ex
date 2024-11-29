@@ -18,6 +18,7 @@ defmodule CatalystWeb.DashBoardLive do
       </div>
       <div class="p-5 flex justify-center ">
         <canvas
+          :if={@active_modal == nil}
           id="my-chart"
           phx-hook="ChartJS"
           phx-update="stream"
