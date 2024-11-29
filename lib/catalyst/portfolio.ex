@@ -1,6 +1,9 @@
 defmodule Catalyst.Portfolio do
-  alias Catalyst.PortfolioData.PortfolioSnapshot
+  alias Catalyst.MarketData.InstrumentsCache
+  alias Catalyst.Analytics.BalanceAndHolding
   alias Catalyst.Repo
+  alias Catalyst.DateTime.DateUtils
+  alias Catalyst.PortfolioData.PortfolioSnapshot
   alias Catalyst.PortfolioData.Trade
   alias Catalyst.PortfolioData.Cash
 
@@ -65,11 +68,54 @@ defmodule Catalyst.Portfolio do
     end
   end
 
-  def get_snapshot() do
-    Repo.all(PortfolioSnapshot)
-    |> Stream.map(fn snp -> {snp.snapshot_date, snp.total_portfolio_value} end)
-    |> Enum.reduce({[], []}, fn {date, val}, {date_acc, val_acc} ->
-      {[date | date_acc], [val | val_acc]}
+  def get_snapshot(range \\ "1w") do
+    PortfolioSnapshot.snapshot(range)
+    |> Stream.map(fn snp -> {snp.snapshot_date, snp} end)
+    |> Stream.reject(fn {date, _val} -> DateUtils.market_holiday?(date) end)
+    |> Enum.reduce({[], [], [], []}, fn {date, snapshot},
+                                        {date_acc, tot_val_acc, book_pl, notional_pl} ->
+      {[date | date_acc], [snapshot.total_portfolio_value | tot_val_acc],
+       [snapshot.book_pl | book_pl], [snapshot.notional_pl | notional_pl]}
     end)
+  end
+
+  def get_holdings() do
+    %{holdings: holdings, avg_buy_price: buy_price} =
+      BalanceAndHolding.fetch_last_balance_holding()
+      |> Map.from_struct()
+
+    holdings
+    |> Map.keys()
+    |> Enum.filter(fn key -> holdings[key] !== 0 end)
+    |> Enum.map(fn key ->
+      %{
+        instrument: InstrumentsCache.get_instrument(key),
+        quantity: holdings[key],
+        avg_buy_price: buy_price[key]
+      }
+    end)
+    |> Enum.reduce([], fn key, acc -> [key | acc] end)
+  end
+
+  def reset_portfolio_data() do
+    Trade.clear_history()
+    Cash.clear_history()
+    PortfolioSnapshot.clear_history()
+    PortfolioSnapshot.calculate_snapshot_all()
+  end
+
+  def recompute_snapshots() do
+    PortfolioSnapshot.clear_history()
+    PortfolioSnapshot.calculate_snapshot_all()
+  end
+
+  def logout_cleanup(user_id) do
+    cleanup =
+      Task.async(fn ->
+        Repo.put_user_id(user_id)
+        BalanceAndHolding.clear()
+      end)
+
+    Task.await(cleanup)
   end
 end

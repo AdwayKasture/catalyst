@@ -32,13 +32,21 @@ hooks.ChartJS = {
   dates(){
     return JSON.parse(this.el.dataset.dates);
   },
+  book_pl(){
+    return JSON.parse(this.el.dataset.book_pl);
+  },
+  notional_pl(){
+    return JSON.parse(this.el.dataset.notional_pl);
+  },
   mounted() {
     const ctx = this.el;
     const data ={
       type: "line",
       data: {
         labels:this.dates(),
-        datasets:[{data: this.valuations()}]
+        datasets:[{data: this.valuations(), label: "Total Valuation"},
+          {data: this.book_pl(), label: "Book P/L"}
+          ,{data: this.notional_pl(), label: "Notional P/L"}]
       }
     };
     const chart = new Chart(ctx, data);

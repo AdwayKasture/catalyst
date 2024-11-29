@@ -1,4 +1,5 @@
 defmodule CatalystWeb.UserSettingsLive do
+  alias Catalyst.Portfolio
   use CatalystWeb, :live_view
 
   alias Catalyst.Accounts
@@ -68,6 +69,24 @@ defmodule CatalystWeb.UserSettingsLive do
             <.button phx-disable-with="Changing...">Change Password</.button>
           </:actions>
         </.simple_form>
+      </div>
+      <div>
+        <div class="mt-10 space-y-6 bg-gray-800 rounded-lg p-5">
+          <.button
+            phx-disable-with="Updating..."
+            phx-click="reset_portfolio_data"
+            class="mt-2 flex items-center justify-between gap-6"
+          >
+            Reset portfolio data
+          </.button>
+          <.button
+            phx-disable-with="Updating..."
+            phx-click="recompute_portfolio_data"
+            class="mt-2 flex items-center justify-between gap-6"
+          >
+            Recompute portfolio data
+          </.button>
+        </div>
       </div>
     </div>
     """
@@ -163,5 +182,15 @@ defmodule CatalystWeb.UserSettingsLive do
       {:error, changeset} ->
         {:noreply, assign(socket, password_form: to_form(changeset))}
     end
+  end
+
+  def handle_event("reset_portfolio_data", _params, socket) do
+    Portfolio.reset_portfolio_data()
+    {:noreply, socket}
+  end
+
+  def handle_event("recompute_portfolio_data", _params, socket) do
+    Portfolio.recompute_snapshots()
+    {:noreply, socket}
   end
 end

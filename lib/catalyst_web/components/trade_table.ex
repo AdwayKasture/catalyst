@@ -22,8 +22,17 @@ defmodule CatalystWeb.TradeTable do
 
       <:col :let={trade} label="Average Trade Price"><%= trade.avg_trade_price %></:col>
 
-      <:col :let={trade} label="Fees"><%= trade.fees %></:col>
+      <%!-- <:col :let={trade} label="Fees"><%= trade.fees %></:col> --%>
       <:action :let={trade}>
+        <.button
+          :if={trade.type == :buy}
+          phx-click="sell"
+          phx-value-type="trade"
+          phx-value-id={trade.id}
+          class="text-gray-300 bg-green-600 hover:bg-green-400 "
+        >
+          Sell
+        </.button>
         <.button
           phx-click="delete"
           phx-value-type="trade"

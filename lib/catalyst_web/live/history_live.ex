@@ -123,4 +123,10 @@ defmodule CatalystWeb.HistoryLive do
         {:noreply, put_flash(socket, :info, "failed to delete")}
     end
   end
+
+  @impl true
+  def handle_event("sell", %{"id" => id}, socket) do
+    trade = %{Portfolio.get(:trade, id) | type: :sell}
+    {:noreply, socket |> assign(modal_action: :sell, modal_data: trade, active_modal: :trade)}
+  end
 end

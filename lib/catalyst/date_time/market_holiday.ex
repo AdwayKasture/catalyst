@@ -3,6 +3,7 @@ defmodule Catalyst.DateTime.MarketHoliday do
   alias Catalyst.DateTime.MarketHoliday
   use Ecto.Schema
   use GenServer
+  require Logger
 
   @market_holidays __MODULE__
 
@@ -62,13 +63,11 @@ defmodule Catalyst.DateTime.MarketHoliday do
       %MarketHoliday{holiday_date: date, description: String.trim(description)}
     else
       {:error, reason} ->
-        # TODO log error
-        IO.inspect(reason)
+        Logger.error(reason)
         raise reason
 
       error ->
-        # TODO log error
-        IO.inspect(error)
+        Logger.error(error)
         raise "unexpected error"
     end
   end
@@ -78,8 +77,8 @@ defmodule Catalyst.DateTime.MarketHoliday do
       {:ok, holiday} ->
         holiday |> holiday_tuple() |> insert_in_ets()
 
-      {:error, _error} ->
-        # TODO log error
+      {:error, error} ->
+        Logger.error(error)
         :error
     end
   end

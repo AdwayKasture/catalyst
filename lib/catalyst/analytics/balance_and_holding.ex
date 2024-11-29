@@ -26,9 +26,42 @@ defmodule Catalyst.Analytics.BalanceAndHolding do
     end
   end
 
+  def fetch_last_balance_holding(date \\ Timex.today()) do
+    key = {date, Repo.get_user_id()}
+
+    if(DateUtils.date_after_origin?(date)) do
+      empty_state()
+    else
+      case BalanceHoldingsCache.get(key) do
+        [{_key, val}] ->
+          if(empty_state?(val)) do
+            fetch_last_balance_holding(Timex.shift(date, days: -1))
+          else
+            val
+          end
+
+        [] ->
+          fetch_last_balance_holding(Timex.shift(date, days: -1))
+      end
+    end
+  end
+
+  def clear() do
+    BalanceHoldingsCache.clear(Repo.get_user_id())
+  end
+
   def calculate(date, events) when is_struct(date, Date) do
     DateUtils.date_after_origin!(date)
-    calc_rec(date, empty_state(), events)
+
+    Date.range(DateUtils.origin_date(), date)
+    |> Enum.each(fn date ->
+      BalanceHoldingsCache.put({date, Repo.get_user_id()}, empty_state())
+    end)
+
+    events
+    |> Enum.each(fn event -> update(:create, event, date) end)
+
+    fetch_from_cache(date)
   end
 
   def calculate(date) when is_struct(date, Date) do
@@ -52,7 +85,14 @@ defmodule Catalyst.Analytics.BalanceAndHolding do
   def update(:delete, event, end_date)
       when valid_event(event) and is_struct(end_date, Date) do
     reversed = reverse(event)
-    update(:create, reversed, end_date)
+
+    Date.range(reversed.transaction_date, end_date)
+    |> Enum.map(fn date ->
+      case BalanceHoldingsCache.get({date, event.user_id}) do
+        [{key, val}] -> {key, rev_merge(reversed, val)}
+      end
+    end)
+    |> Enum.each(fn {key, state} -> BalanceHoldingsCache.put(key, state) end)
   end
 
   def update(:update, {new_txn, old_txn}, end_date)
@@ -138,6 +178,21 @@ defmodule Catalyst.Analytics.BalanceAndHolding do
       buy_quantity: new_buy_quantity,
       cash: new_cash
     }
+  end
+
+  # dont update avg buy price/ quantity
+  defp rev_merge(elem, acc) when is_struct(elem, Trade) and is_struct(acc, State) do
+    %State{
+      balance: update_balance(elem, acc),
+      holdings: update_holdings(elem, acc),
+      buy_quantity: acc.buy_quantity,
+      avg_buy_price: acc.avg_buy_price,
+      cash: acc.cash
+    }
+  end
+
+  defp rev_merge(elem, acc) when is_struct(elem, Cash) and is_struct(acc, State) do
+    merge(elem, acc)
   end
 
   defp update_balance(trade, state) when is_struct(trade, Trade) and is_struct(state, State) do
@@ -257,5 +312,16 @@ defmodule Catalyst.Analytics.BalanceAndHolding do
 
   defp empty_state() do
     %State{balance: %{}, holdings: %{}, avg_buy_price: %{}, buy_quantity: %{}}
+  end
+
+  defp empty_state?(state) when is_struct(state, State) do
+    map_empty?(state.avg_buy_price) &&
+      map_empty?(state.buy_quantity) &&
+      map_empty?(state.holdings) &&
+      map_empty?(state.balance)
+  end
+
+  defp map_empty?(map) when is_map(map) do
+    map_size(map) == 0
   end
 end

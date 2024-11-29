@@ -22,7 +22,7 @@ defmodule Catalyst.Analytics.BalanceHoldingsCache do
   end
 
   def clear(user_id) do
-    :ets.match_delete(:balance_holding_memo, {{:_, user_id}, :_})
+    :ets.match_delete(:balance_holding_memo, {{:_, user_id}, :"$1"})
     :ok
   end
 

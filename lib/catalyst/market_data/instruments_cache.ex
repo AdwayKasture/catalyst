@@ -17,6 +17,10 @@ defmodule Catalyst.MarketData.InstrumentsCache do
     GenServer.call(@instruments_cache, {:instrument?, instrument_id})
   end
 
+  def clear_all() do
+    GenServer.cast(@instruments_cache, {:reset})
+  end
+
   @impl true
   def init(_state) do
     :ets.new(:instruments, [:set, :public, :named_table])
@@ -31,6 +35,12 @@ defmodule Catalyst.MarketData.InstrumentsCache do
   def handle_cast({:insert, instrument}, _state) do
     :ets.insert(:instruments, {instrument.instrument_id, instrument})
     {:noreply, :inserted}
+  end
+
+  @impl true
+  def handle_cast({:reset}, _state) do
+    :ets.delete_all_objects(:instruments)
+    {:noreply, :reset}
   end
 
   @impl true

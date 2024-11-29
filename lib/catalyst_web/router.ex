@@ -63,6 +63,7 @@ defmodule CatalystWeb.Router do
     live_session :require_authenticated_user,
       on_mount: [{CatalystWeb.UserAuth, :ensure_authenticated}] do
       live "/dashboard", DashBoardLive
+      live "/dashboard/:range", DashBoardLive
       live "/history", HistoryLive
       live "/history/:tab", HistoryLive
       live "/users/settings", UserSettingsLive, :edit

@@ -1,5 +1,5 @@
 defmodule Catalyst.TradesTest do
-  alias Catalyst.PortfolioData.PortfolioSnapshot
+  alias Catalyst.Portfolio
   alias Catalyst.PortfolioData.Trade
   alias Phoenix.PubSub
   alias Catalyst.AccountsFixtures
@@ -13,7 +13,7 @@ defmodule Catalyst.TradesTest do
       Repo.insert(get_instrumentA())
       Repo.put_user_id(user.id)
       PubSub.subscribe(Catalyst.PubSub, "trades")
-      PortfolioSnapshot.calculate_snapshot_all()
+      Portfolio.recompute_snapshots()
       {:ok, user_logged_in: true}
     end
 

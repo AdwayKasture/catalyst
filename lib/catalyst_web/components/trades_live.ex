@@ -141,6 +141,7 @@ defmodule CatalystWeb.TradesLive do
     {trade, instr} =
       case assigns.action do
         :new -> {%Trade{}, nil}
+        :sell -> {assigns.trade, assigns.trade.instrument}
         :edit -> {assigns.trade, assigns.trade.instrument}
       end
 
@@ -178,6 +179,7 @@ defmodule CatalystWeb.TradesLive do
     instr =
       case socket.assigns.action do
         :new -> nil
+        :sell -> socket.assigns.selected_instrument
         :edit -> socket.assigns.selected_instrument
       end
 
@@ -201,6 +203,7 @@ defmodule CatalystWeb.TradesLive do
     res =
       case socket.assigns.action do
         :new -> Portfolio.save_trade(trade)
+        :sell -> Portfolio.save_trade(trade)
         :edit -> Portfolio.update_trade(socket.assigns.trade, trade)
       end
 

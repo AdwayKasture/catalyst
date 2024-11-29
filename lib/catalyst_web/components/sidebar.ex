@@ -13,7 +13,7 @@ defmodule CatalystWeb.Sidebar do
             <%= for {label, path} <- menu_items() do %>
               <.nav_item path={path} label={label} />
             <% end %>
-            <%= if @current_user.role == :user do %>
+            <%= if @current_user.role == :admin do %>
               <%= for {label, path} <- admin_items() do %>
                 <.nav_item path={path} label={label} />
               <% end %>
@@ -43,7 +43,7 @@ defmodule CatalystWeb.Sidebar do
 
   def user_card(assigns) do
     ~H"""
-    <div class="block py-2.5 px-4 rounded transition duration-200 hover:bg-gray-700">
+    <div class="block py-2.5 px-4  transition duration-200  border-t border-b border-gray-600">
       <%= @user_name %>
     </div>
     """
@@ -51,7 +51,7 @@ defmodule CatalystWeb.Sidebar do
 
   def logo_card(assigns) do
     ~H"""
-    <a href="/" class="text-3xl font-bold text-blue-400 p-8">Catalyst</a>
+    <a href="/" class="text-3xl font-bold text-blue-400 px-8 ">Catalyst</a>
     """
   end
 

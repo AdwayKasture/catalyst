@@ -15,4 +15,12 @@ defmodule Catalyst.DateTime.DateUtils do
       raise ArgumentError, "Date cannot be earlier than 2024-01-01"
     end
   end
+
+  def date_after_origin?(date) when is_struct(date, Date) do
+    if Timex.before?(date, origin_date()) do
+      false
+    else
+      true
+    end
+  end
 end

@@ -1,6 +1,6 @@
 defmodule Catalyst.CashTest do
   import Catalyst.PortfolioUtil
-  alias Catalyst.PortfolioData.PortfolioSnapshot
+  alias Catalyst.Portfolio
   alias Phoenix.PubSub
   alias Catalyst.AccountsFixtures
   use Catalyst.DataCase
@@ -12,7 +12,7 @@ defmodule Catalyst.CashTest do
       user = AccountsFixtures.user_fixture()
       Repo.put_user_id(user.id)
       PubSub.subscribe(Catalyst.PubSub, "transactions")
-      PortfolioSnapshot.calculate_snapshot_all()
+      Portfolio.recompute_snapshots()
       {:ok, user_logged_in: true}
     end
 

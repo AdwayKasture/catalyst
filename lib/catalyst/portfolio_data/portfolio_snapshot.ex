@@ -39,8 +39,10 @@ defmodule Catalyst.PortfolioData.PortfolioSnapshot do
   def calculate_snapshot_all() do
     trades = Portfolio.get_history(:trade) |> Enum.to_list()
     cash = Portfolio.get_history(:cash) |> Enum.to_list()
+    clear_history()
+    BalanceAndHolding.calculate(Timex.today(), trades ++ cash)
 
-    calculate_snapshot(DateUtils.origin_date(), Timex.today(), trades ++ cash)
+    calculate_snapshot(DateUtils.origin_date(), Timex.today())
   end
 
   def update_snapshot_for(type, data, end_date) when is_struct(end_date, Date) do
@@ -54,27 +56,32 @@ defmodule Catalyst.PortfolioData.PortfolioSnapshot do
     BalanceAndHolding.update(type, data, end_date)
 
     Date.range(txn_date, end_date)
-    |> Enum.map(&get_pair/1)
+    |> Enum.map(&get_pair!/1)
     |> Enum.each(&handle_update/1)
 
     :ok
   end
 
-  defp calculate_snapshot_for_day(date, events) when is_struct(date, Date) do
-    result = %{evaluate_snapshot(date, events) | user_id: Repo.get_user_id()}
+  def clear_history() do
+    BalanceAndHolding.clear()
+    Repo.delete_all(PortfolioSnapshot)
+  end
+
+  defp calculate_snapshot_for_day(date) when is_struct(date, Date) do
+    result = %{evaluate_snapshot(date) | user_id: Repo.get_user_id()}
     {:ok, rec} = Repo.insert(result)
     rec
   end
 
-  defp calculate_snapshot(start_date, end_date, events)
+  defp calculate_snapshot(start_date, end_date)
        when is_struct(start_date, Date) and is_struct(end_date, Date) do
     Date.range(start_date, end_date)
     |> Enum.reverse()
-    |> Enum.each(&calculate_snapshot_for_day(&1, events))
+    |> Enum.each(&calculate_snapshot_for_day(&1))
   end
 
-  defp evaluate_snapshot(date, events) when is_struct(date, Date) do
-    BalanceAndHolding.calculate(date, events)
+  defp evaluate_snapshot(date) when is_struct(date, Date) do
+    BalanceAndHolding.fetch_from_cache(date)
     |> reduce(date)
   end
 
@@ -140,7 +147,24 @@ defmodule Catalyst.PortfolioData.PortfolioSnapshot do
     Repo.all(query)
   end
 
-  defp get_pair(date) when is_struct(date, Date) do
+  def snapshot(param) do
+    start_date =
+      case param do
+        "1w" -> Timex.today() |> Timex.shift(days: -7)
+        "1m" -> Timex.today() |> Timex.shift(months: -1)
+        "3m" -> Timex.today() |> Timex.shift(months: -3)
+        "ytd" -> Timex.beginning_of_year(Timex.today())
+      end
+
+    query =
+      from s in PortfolioSnapshot,
+        where: s.snapshot_date >= ^start_date,
+        order_by: [desc: s.snapshot_date]
+
+    Repo.all(query)
+  end
+
+  defp get_pair!(date) when is_struct(date, Date) do
     case query_by_date(date) do
       [] ->
         {:insert, BalanceAndHolding.fetch_from_cache(date) |> reduce(date)}

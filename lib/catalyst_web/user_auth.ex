@@ -4,7 +4,7 @@ defmodule CatalystWeb.UserAuth do
   import Plug.Conn
   import Phoenix.Controller
 
-  alias Catalyst.Analytics.BalanceHoldingsCache
+  alias Catalyst.Portfolio
   alias Catalyst.Accounts
 
   # Make the remember me cookie valid for 60 days.
@@ -77,7 +77,7 @@ defmodule CatalystWeb.UserAuth do
     user_id = get_session(conn, :user_id)
     user_token = get_session(conn, :user_token)
     user_token && Accounts.delete_user_session_token(user_token)
-    BalanceHoldingsCache.clear(user_id)
+    Portfolio.logout_cleanup(user_id)
 
     if live_socket_id = get_session(conn, :live_socket_id) do
       CatalystWeb.Endpoint.broadcast(live_socket_id, "disconnect", %{})
@@ -191,7 +191,7 @@ defmodule CatalystWeb.UserAuth do
   def on_mount(:ensure_admin, _params, session, socket) do
     socket = mount_current_user(socket, session)
 
-    if socket.assigns.current_user && socket.assigns.current_user.role == :user do
+    if socket.assigns.current_user && socket.assigns.current_user.role == :admin do
       {:cont, socket}
     else
       socket =

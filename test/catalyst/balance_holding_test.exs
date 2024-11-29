@@ -1,6 +1,6 @@
 defmodule Catalyst.BalanceHoldingTest do
+  alias Catalyst.Portfolio
   alias Catalyst.PortfolioUtil
-  alias Catalyst.PortfolioData.PortfolioSnapshot
   alias Catalyst.PortfolioData.Cash
   alias Catalyst.MarketData.InstrumentsCache
   alias Catalyst.PortfolioData.Trade
@@ -19,7 +19,7 @@ defmodule Catalyst.BalanceHoldingTest do
       Repo.insert(get_instrumentB())
       InstrumentsCache.insert(get_instrumentA())
       InstrumentsCache.insert(get_instrumentB())
-      PortfolioSnapshot.calculate_snapshot_all()
+      Portfolio.recompute_snapshots()
       :ok
     end
 
@@ -44,7 +44,6 @@ defmodule Catalyst.BalanceHoldingTest do
       assert ans.balance == %{"1000" => Decimal.new(-2_200_000)}
     end
 
-    # TODO check exception
     test "only sell for single instrument" do
       trade_A = %{trade_data() | type: :sell}
       wait(Trade.create_trade(trade_A))

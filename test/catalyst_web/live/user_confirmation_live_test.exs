@@ -8,7 +8,9 @@ defmodule CatalystWeb.UserConfirmationLiveTest do
   alias Catalyst.Repo
 
   setup do
-    %{user: user_fixture()}
+    user = user_fixture()
+    Repo.put_user_id(user.id)
+    %{user: user}
   end
 
   describe "Confirm user" do

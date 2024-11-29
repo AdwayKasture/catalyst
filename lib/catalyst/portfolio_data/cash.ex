@@ -72,6 +72,10 @@ defmodule Catalyst.PortfolioData.Cash do
     Repo.get(Cash, id)
   end
 
+  def clear_history() do
+    Repo.delete_all(Cash)
+  end
+
   defp notify_creation(event) do
     case event do
       {:ok, txn} -> {broadcast({:cash, :create, txn}), "Transaction created successfully"}

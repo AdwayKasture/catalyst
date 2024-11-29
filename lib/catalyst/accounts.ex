@@ -4,6 +4,7 @@ defmodule Catalyst.Accounts do
   """
 
   import Ecto.Query, warn: false
+  alias Catalyst.Portfolio
   alias Catalyst.Repo
 
   alias Catalyst.Accounts.{User, UserToken, UserNotifier}
@@ -281,6 +282,8 @@ defmodule Catalyst.Accounts do
     with {:ok, query} <- UserToken.verify_email_token_query(token, "confirm"),
          %User{} = user <- Repo.one(query, skip_user_id: true),
          {:ok, %{user: user}} <- Repo.transaction(confirm_user_multi(user)) do
+      Repo.put_user_id(user.id)
+      Portfolio.recompute_snapshots()
       {:ok, user}
     else
       _ -> :error

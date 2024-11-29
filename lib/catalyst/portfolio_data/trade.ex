@@ -105,6 +105,10 @@ defmodule Catalyst.PortfolioData.Trade do
     |> enrich_instrument()
   end
 
+  def clear_history() do
+    Repo.delete_all(Trade)
+  end
+
   defp notify_creation(event) do
     case event do
       {:ok, txn} -> {broadcast({:trade, :create, txn}), "Trade created successfully"}
