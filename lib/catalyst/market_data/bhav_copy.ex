@@ -1,4 +1,5 @@
 defmodule Catalyst.MarketData.BhavCopy do
+  require Logger
   alias Catalyst.MarketData.InstrumentsCache
   alias Catalyst.MarketData.Instrument
   alias Catalyst.Repo
@@ -115,7 +116,8 @@ defmodule Catalyst.MarketData.BhavCopy do
   defp parse_rows_to_bhavcopy(lines) do
     lines
     |> Enum.drop(1)
-    |> Enum.map(&map_to_record(&1))
+    |> Enum.map(&map_to_record/1)
+    |> Enum.filter(&valid_instrument?/1)
   end
 
   defp map_to_record(row) do
@@ -210,10 +212,17 @@ defmodule Catalyst.MarketData.BhavCopy do
         scrip_group: bhavCopy.scrip_group
       }
 
-      # TODO: log error
       case Repo.insert(instrument) do
-        {:ok, instrument} -> InstrumentsCache.insert(instrument)
-        {:error, changeset} -> {:error, changeset}
+        {:ok, instrument} ->
+          InstrumentsCache.insert(instrument)
+
+        {:error, changeset} ->
+          Logger.error("error inserting instrument",
+            instrument_id: instrument.instrument_id,
+            inserted_at: instrument.inserted_at
+          )
+
+          {:error, changeset}
       end
     end
 
@@ -251,6 +260,15 @@ defmodule Catalyst.MarketData.BhavCopy do
       true
     else
       false
+    end
+  end
+
+  defp valid_instrument?(bhav_copy) when is_struct(bhav_copy, BhavCopy) do
+    case {bhav_copy.ticker, Application.get_env(:catalyst, :instruments)} do
+      {_, :all} -> true
+      {_, nil} -> true
+      {_, []} -> true
+      {ticker, instruments} when is_list(instruments) -> ticker in instruments
     end
   end
 end

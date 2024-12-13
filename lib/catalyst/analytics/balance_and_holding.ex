@@ -6,8 +6,6 @@ defmodule Catalyst.Analytics.State do
             cash: Decimal.new(0)
 end
 
-# TODO optimize by ets caching / agent
-# take into consideration create/update of a trade
 defmodule Catalyst.Analytics.BalanceAndHolding do
   alias Catalyst.Repo
   alias Catalyst.Analytics.BalanceHoldingsCache

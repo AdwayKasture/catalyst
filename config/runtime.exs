@@ -20,6 +20,14 @@ if System.get_env("PHX_SERVER") do
   config :catalyst, CatalystWeb.Endpoint, server: true
 end
 
+instruments_list =
+  case System.get_env("INSTRUMENTS") do
+    nil -> :all
+    instr_str -> instr_str |> String.split(",", trim: true)
+  end
+
+config :catalyst, :instruments, instruments_list
+
 if config_env() == :prod do
   database_url =
     System.get_env("DATABASE_URL") ||
@@ -36,7 +44,6 @@ if config_env() == :prod do
     pool_size: String.to_integer(System.get_env("POOL_SIZE") || "10"),
     socket_options: maybe_ipv6,
     ssl_opts: [verify: :verify_none]
-
 
   # The secret key base is used to sign/encrypt cookies and other secrets.
   # A default value is used in config/dev.exs and config/test.exs but you

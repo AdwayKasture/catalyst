@@ -1,4 +1,5 @@
 defmodule CatalystWeb.DataConfigLive do
+  require Logger
   alias Catalyst.DateTime.MarketHoliday
   alias Catalyst.MarketData.BhavCopy
   use CatalystWeb, :live_view
@@ -166,8 +167,9 @@ defmodule CatalystWeb.DataConfigLive do
   end
 
   @impl true
-  def handle_info({:DOWN, _ref, _, _, _}, socket) do
-    # TODO log failure
+  def handle_info({:DOWN, ref, _, _, _}, socket) do
+    Process.demonitor(ref, [:flush])
+    Logger.error("failed to process file")
 
     {:noreply,
      socket

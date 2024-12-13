@@ -362,8 +362,8 @@ defmodule Catalyst.Accounts do
     end
   end
 
-  def set_user_role(email,new_role) do
-    query = from(user in User, where: user.email == ^email,update: [set: [role: ^new_role]])
-    Repo.update_all(query,[],skip_user_id: true)
+  def set_user_role(email, new_role) do
+    query = from(user in User, where: user.email == ^email, update: [set: [role: ^new_role]])
+    Repo.update_all(query, [], skip_user_id: true)
   end
 end

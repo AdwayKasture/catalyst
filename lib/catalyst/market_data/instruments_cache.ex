@@ -5,8 +5,8 @@ defmodule Catalyst.MarketData.InstrumentsCache do
 
   @instruments_cache __MODULE__
 
-  def start_link(_any) do
-    GenServer.start_link(@instruments_cache, :starting, name: @instruments_cache)
+  def start_link(opts \\ []) do
+    GenServer.start_link(@instruments_cache, :starting, opts)
   end
 
   def insert(instrument) when is_struct(instrument, Instrument) do
