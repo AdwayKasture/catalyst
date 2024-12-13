@@ -1,6 +1,9 @@
 defmodule Catalyst.Workers.DailyWorker do
   alias Catalyst.Market
-  use Oban.Worker, queue: :default
+  @max_attempts 1
+
+  use Oban.Worker, queue: :default, max_attempts: @max_attempts
+  
 
   @impl true
   def perform(_job) do

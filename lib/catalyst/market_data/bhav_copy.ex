@@ -47,15 +47,22 @@ defmodule Catalyst.MarketData.BhavCopy do
   end
 
   def store_market_history_for_date(date) when is_struct(date, Date) do
-    date
+    fetched_data = date
     |> Calendar.strftime("%Y%m%d")
     |> fetch_data_for_date
-    |> String.split("\n", trim: true)
-    |> parse_rows_to_bhavcopy
-    |> update_instruments()
-    |> Enum.map(&to_map/1)
-    |> Enum.chunk_every(100)
-    |> Enum.each(fn chunk -> Repo.insert_all(BhavCopy, chunk) end)
+
+    case fetched_data do
+      :error -> {:ok,"job failed and error has been logged"}
+      body ->
+        body
+        |> String.split("\n", trim: true)
+        |> parse_rows_to_bhavcopy
+        |> update_instruments()
+        |> Enum.map(&to_map/1)
+        |> Enum.chunk_every(100)
+        |> Enum.each(fn chunk -> Repo.insert_all(BhavCopy, chunk) end)
+    end
+
 
     {:ok, :data_loaded}
   end
@@ -106,11 +113,16 @@ defmodule Catalyst.MarketData.BhavCopy do
   defp fetch_data_for_date(date) do
     EEx.eval_string(@api_template, date: date)
     |> HTTPoison.get!(@headers)
-    |> validate_response!
+    |> validate_response
   end
 
-  defp validate_response!(%HTTPoison.Response{status_code: 200, body: body}) do
+  defp validate_response(%HTTPoison.Response{status_code: 200, body: body}) do
     body
+  end
+
+  defp validate_response(%HTTPoison.Response{status_code: error_code, body: body}) do
+    Logger.error("failed to fetch data",[error_code: error_code,response: body])
+    :error
   end
 
   defp parse_rows_to_bhavcopy(lines) do
