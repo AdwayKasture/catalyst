@@ -8,12 +8,8 @@ defmodule CatalystWeb.DataConfigLive do
   def mount(_params, _session, socket) do
     {:ok,
      socket
-     |> assign(:upload_error_md, nil)
-     |> assign(:processing_md, false)
      |> assign(:upload_status_md, nil)
      |> assign(:dragging_md, false)
-     |> assign(:upload_error_mh, nil)
-     |> assign(:processing_mh, false)
      |> assign(:upload_status_mh, nil)
      |> assign(:dragging_mh, false)
      |> allow_upload(:market_data,
@@ -37,15 +33,11 @@ defmodule CatalystWeb.DataConfigLive do
         <.market_data
           dragging={@dragging_md}
           data={@uploads.market_data}
-          upload_error={@upload_error_md}
-          processing={@processing_md}
           upload_status={@upload_status_md}
         />
         <.market_holiday
           dragging={@dragging_mh}
           data={@uploads.holiday_data}
-          upload_error={@upload_error_mh}
-          processing={@processing_mh}
           upload_status={@upload_status_mh}
         />
       </div>
@@ -90,50 +82,27 @@ defmodule CatalystWeb.DataConfigLive do
 
   @impl Phoenix.LiveView
   def handle_event("save_md", _params, socket) do
-    if socket.assigns.processing_md do
-      {:noreply, socket}
-    else
-      socket = assign(socket, processing_md: true, upload_error_md: nil)
-
       consume_uploaded_entries(socket, :market_data, fn %{path: path}, entry ->
-        dest = Path.join([:code.priv_dir(:catalyst), "static", "uploads", Path.basename(path)])
 
-        # You will need to create `priv/static/uploads` for `File.cp!/2` to work.
-        File.cp!(path, dest)
-
-        Task.Supervisor.async_nolink(Catalyst.TaskSupervisor, fn ->
-          BhavCopy.fetch_data_from_file(dest, Path.extname(entry.client_name))
-        end)
+          BhavCopy.fetch_data_from_file(path, Path.extname(entry.client_name))
 
         {:ok, :started_processing}
       end)
 
-      {:noreply, socket}
-    end
+      {:noreply, socket
+      |>assign(upload_status_md: "Successfully processed file import")}
   end
 
   @impl Phoenix.LiveView
   def handle_event("save_mh", _params, socket) do
-    if socket.assigns.processing_mh do
-      {:noreply, socket}
-    else
-      socket = assign(socket, processing_mh: true, upload_error_mh: nil)
-
       consume_uploaded_entries(socket, :holiday_data, fn %{path: path}, _entry ->
-        dest = Path.join([:code.priv_dir(:catalyst), "static", "uploads", Path.basename(path)])
-
-        # You will need to create `priv/static/uploads` for `File.cp!/2` to work.
-        File.cp!(path, dest)
-
-        Task.Supervisor.async_nolink(Catalyst.TaskSupervisor, fn ->
-          MarketHoliday.ingest_holidays(dest)
-        end)
+          MarketHoliday.ingest_holidays(path)
 
         {:ok, :started_processing}
       end)
 
-      {:noreply, socket}
-    end
+      {:noreply, socket
+      |>assign(upload_status_mh: "Successfully processed file import")}
   end
 
   @impl Phoenix.LiveView
@@ -144,41 +113,6 @@ defmodule CatalystWeb.DataConfigLive do
   @impl Phoenix.LiveView
   def handle_event("cancel-upload-mh", %{"ref" => ref}, socket) do
     {:noreply, cancel_upload(socket, :holiday_data, ref)}
-  end
-
-  @impl true
-  def handle_info({ref, {:ok, :holidays_loaded}}, socket) do
-    Process.demonitor(ref, [:flush])
-
-    {:noreply,
-     socket
-     |> assign(processing_mh: false)
-     |> assign(upload_status_mh: "Successfully processed file import")}
-  end
-
-  @impl true
-  def handle_info({ref, {:ok, :market_data_loaded}}, socket) do
-    Process.demonitor(ref, [:flush])
-
-    {:noreply,
-     socket
-     |> assign(processing_md: false)
-     |> assign(upload_status_md: "Successfully processed file import")}
-  end
-
-  @impl true
-  def handle_info({:DOWN, ref, _, _, _}, socket) do
-    Process.demonitor(ref, [:flush])
-    Logger.error("failed to process file")
-
-    {:noreply,
-     socket
-     |> assign(processing_md: false)
-     |> assign(processing_mh: false)
-     |> assign(upload_status_md: nil)
-     |> assign(upload_status_mh: nil)
-     |> assign(upload_error_md: "File upload failed please check logs")
-     |> assign(upload_error_mh: "File upload failed please check logs")}
   end
 
   def market_data(assigns) do
@@ -240,14 +174,10 @@ defmodule CatalystWeb.DataConfigLive do
           <% end %>
         </div>
 
-        <.upload_statues
-          upload_error={@upload_error}
-          processing={@processing}
-          upload_status={@upload_status}
-        />
+        <.upload_statues upload_status={@upload_status}/>
 
         <div class="flex justify-end">
-          <.button type="submit" disabled={@processing || Enum.empty?(@data.entries)}>
+          <.button type="submit" disabled={Enum.empty?(@data.entries)}>
             Upload
           </.button>
         </div>
@@ -314,14 +244,10 @@ defmodule CatalystWeb.DataConfigLive do
             </div>
           <% end %>
         </div>
-        <.upload_statues
-          upload_error={@upload_error}
-          processing={@processing}
-          upload_status={@upload_status}
-        />
+        <.upload_statues upload_status={@upload_status} />
 
         <div class="flex justify-end">
-          <.button type="submit" disabled={@processing || Enum.empty?(@data.entries)}>
+          <.button type="submit" disabled={Enum.empty?(@data.entries)}>
             Upload
           </.button>
         </div>
@@ -332,20 +258,6 @@ defmodule CatalystWeb.DataConfigLive do
 
   def upload_statues(assigns) do
     ~H"""
-    <%= if @upload_error do %>
-      <div class="text-sm text-red-500">
-        <%= @upload_error %>
-      </div>
-    <% end %>
-
-    <%= if @processing do %>
-      <div class="flex items-center justify-center space-x-2">
-        <div class="animate-spin rounded-full h-4 w-4 border-2 border-primary-500 border-t-transparent">
-        </div>
-        <span class="text-sm">Processing file...</span>
-      </div>
-    <% end %>
-
     <%= if @upload_status do %>
       <div class="text-sm text-green-500">
         <%= @upload_status %>
