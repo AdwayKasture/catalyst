@@ -3,7 +3,7 @@ defmodule Catalyst.PortfolioUtil do
 
   def wait_for_tasks() do
     pids = Task.Supervisor.children(Catalyst.TaskSupervisor)
-
+  
     case pids do
       [] ->
         wait_for_tasks()

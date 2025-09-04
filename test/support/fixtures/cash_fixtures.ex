@@ -4,7 +4,7 @@ defmodule Catalyst.CashFixtures do
   def txn_data() do
     %{
       type: :deposit,
-      transaction_date: ~D[2024-09-05],
+      transaction_date: ~D[2025-09-04],
       amount: Decimal.new(1000),
       fees: Decimal.new(0)
     }
@@ -13,7 +13,7 @@ defmodule Catalyst.CashFixtures do
   def deposit_cash(amt) do
     %{
       type: :deposit,
-      transaction_date: ~D[2024-09-05],
+      transaction_date: ~D[2025-09-04],
       amount: Decimal.new(amt),
       fees: Decimal.new(0)
     }
@@ -22,7 +22,7 @@ defmodule Catalyst.CashFixtures do
   def withdraw_cash(amt) do
     %{
       type: :withdraw,
-      transaction_date: ~D[2024-09-05],
+      transaction_date: ~D[2025-09-04],
       amount: Decimal.new(amt),
       fees: Decimal.new(0)
     }
@@ -31,7 +31,7 @@ defmodule Catalyst.CashFixtures do
   def trade_data() do
     %{
       type: :buy,
-      transaction_date: ~D[2024-09-05],
+      transaction_date: ~D[2025-09-04],
       quantity: 1000,
       avg_trade_price: Decimal.new(1000),
       fees: Decimal.new(0),

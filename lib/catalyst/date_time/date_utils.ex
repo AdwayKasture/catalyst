@@ -1,6 +1,6 @@
 defmodule Catalyst.DateTime.DateUtils do
   alias Catalyst.DateTime.MarketHoliday
-  @origin_date ~D[2024-01-01]
+  @origin_date ~D[2025-01-01]
 
   def origin_date() do
     @origin_date

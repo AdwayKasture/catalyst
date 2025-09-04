@@ -24,11 +24,11 @@ defmodule Catalyst.BalanceHoldingTest do
     end
 
     test "exception on date before origin" do
-      assert_raise(ArgumentError, fn -> BalanceAndHolding.calculate(~D[2023-01-01]) end)
+      assert_raise(ArgumentError, fn -> BalanceAndHolding.calculate(~D[2024-01-01]) end)
     end
 
     test "no trades result in empty state" do
-      ans = %State{} = BalanceAndHolding.calculate(~D[2024-01-05])
+      ans = %State{} = BalanceAndHolding.calculate(~D[2025-01-05])
       assert ans.holdings == %{}
       assert ans.balance == %{}
       assert ans.cash == Decimal.new(0)
@@ -44,6 +44,7 @@ defmodule Catalyst.BalanceHoldingTest do
       assert ans.balance == %{"1000" => Decimal.new(-2_200_000)}
     end
 
+    @tag :my_test
     test "only sell for single instrument" do
       trade_A = %{trade_data() | type: :sell}
       wait(Trade.create_trade(trade_A))
@@ -162,6 +163,6 @@ defmodule Catalyst.BalanceHoldingTest do
   end
 
   defp test_date() do
-    ~D[2024-09-05]
+    ~D[2025-09-04]
   end
 end
